@@ -51,6 +51,7 @@ public class ShowingRoundScorePanel : MonoBehaviour
         currentRealPlayers.Clear();
         // -------------
 
+        yield return new WaitForSeconds(1.5f);
         yield return StartCoroutine(ShowPlayersRoutine(players));
 
         if (real)
@@ -91,7 +92,7 @@ public class ShowingRoundScorePanel : MonoBehaviour
 
             currentPlayers.Add(tempPlayer);
 
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(1.5f);
         }
     }
 }

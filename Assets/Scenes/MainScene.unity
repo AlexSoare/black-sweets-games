@@ -4939,11 +4939,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1184393533}
   m_CullTransparentMesh: 1
---- !u!224 &1243041013 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8082745331155048077, guid: 2cb08a53d0aa37840a64398f4c02c432, type: 3}
-  m_PrefabInstance: {fileID: 6141778688764370974}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1275634287
 GameObject:
   m_ObjectHideFlags: 0
@@ -5752,11 +5747,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!224 &1626727054 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8856817226786491079, guid: e92a6adbf7236be4f83a7f5e343b259e, type: 3}
-  m_PrefabInstance: {fileID: 5255394443595342312}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1686931051
 GameObject:
   m_ObjectHideFlags: 0
@@ -7822,17 +7812,9 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1866920705}
     m_Modifications:
-    - target: {fileID: 5255394442921266120, guid: e92a6adbf7236be4f83a7f5e343b259e, type: 3}
-      propertyPath: playersParent
-      value: 
-      objectReference: {fileID: 1626727054}
     - target: {fileID: 5255394442921266166, guid: e92a6adbf7236be4f83a7f5e343b259e, type: 3}
       propertyPath: m_Name
       value: 6.ShowingTotalScore
-      objectReference: {fileID: 0}
-    - target: {fileID: 5255394442921266166, guid: e92a6adbf7236be4f83a7f5e343b259e, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5255394442921266167, guid: e92a6adbf7236be4f83a7f5e343b259e, type: 3}
       propertyPath: m_Pivot.x
@@ -7927,17 +7909,9 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1866920705}
     m_Modifications:
-    - target: {fileID: 6141778688844344800, guid: 2cb08a53d0aa37840a64398f4c02c432, type: 3}
-      propertyPath: rightTitlesParent
-      value: 
-      objectReference: {fileID: 1243041013}
     - target: {fileID: 6141778688844344802, guid: 2cb08a53d0aa37840a64398f4c02c432, type: 3}
       propertyPath: m_Name
       value: 4.ShowingTitles
-      objectReference: {fileID: 0}
-    - target: {fileID: 6141778688844344802, guid: 2cb08a53d0aa37840a64398f4c02c432, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6141778688844344803, guid: 2cb08a53d0aa37840a64398f4c02c432, type: 3}
       propertyPath: m_Pivot.x

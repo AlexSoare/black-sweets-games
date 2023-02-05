@@ -9,7 +9,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{82E5DBA2-A0F6-7895-F01C-FF4720A92928}</ProjectGuid>
+    <ProjectGuid>{901B4132-E9E4-EA75-CAFD-BF3AF24114E5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -59,7 +59,7 @@
     <Compile Include="Assets\Scripts\Core\StateMachines\DrawingGame\ShowingRoundScoreState.cs" />
     <Compile Include="Assets\Scripts\Core\StateMachines\DrawingGame\ShowingTitlesState.cs" />
     <Compile Include="Assets\Scripts\UI\LobbyPanel.cs" />
-    <Compile Include="Assets\Scenes\SpritesHolder.cs" />
+    <Compile Include="Assets\Scripts\SpritesHolder.cs" />
     <Compile Include="Assets\Scripts\UI\ShowingRoundScorePanel.cs" />
     <Compile Include="Assets\Scripts\Core\ServerAPI.cs" />
     <Compile Include="Assets\Scripts\Core\StateMachines\Base\StateMachineBase.cs" />
@@ -73,7 +73,7 @@
     <Compile Include="Assets\Scripts\UI\ShowingTotalScorePanel.cs" />
     <Compile Include="Assets\Scripts\Tweens\LocalPositionTween.cs" />
     <Compile Include="Assets\Scripts\UI\LobbyPlayerView.cs" />
-    <Compile Include="Assets\Scenes\BackgroundManager.cs" />
+    <Compile Include="Assets\Scripts\BackgroundManager.cs" />
     <Compile Include="Assets\Scripts\UI\WaitingForDrawingsPanel.cs" />
     <Compile Include="Assets\Scripts\Tweens\ScaleTween.cs" />
     <Compile Include="Assets\Scripts\Tweens\AlphaTween.cs" />
