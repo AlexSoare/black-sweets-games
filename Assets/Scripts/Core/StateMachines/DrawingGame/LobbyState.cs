@@ -2,12 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerConnectedMsg
-{
-    public string playerName;
-}
-
-public class LobbyState : BaseState<DrawingGameStates, DrawingGamePrefs>
+public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
 {
     private LobbyPanel panel;
 
@@ -18,8 +13,11 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGamePrefs>
 
     public override void OnEnterState()
     {
-        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
-        StateData.playersAvatarsPool = new List<Sprite>(SpritesHolder.PlayerAvatars);
+        StateData.Clear();
+        StateData.State = DrawingGameStates.Lobby.ToString();
+
+        ServerAPI.AddWebSocketMessageCallback<PlayerConnectedMsg>(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
+        ServerAPI.AddWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerAvatarDrawing);
 
         this.panel.Init(OnStartGame);
         this.panel.Show();
@@ -28,33 +26,42 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGamePrefs>
     public override void OnExitState()
     {
         this.panel.Hide();
-        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
+        ServerAPI.RemoveWebSocketMessageCallback<PlayerConnectedMsg>(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
     }
 
-    private void OnPlayerConnected(string playerNameJSON)
+    private void OnPlayerConnected(PlayerConnectedMsg newPlayer)
     {
-        var msgObj = JsonUtility.FromJson<PlayerConnectedMsg>(playerNameJSON);
+        Player tempPlayer;
 
-        DrawingPlayer player;
-
-        if (!StateData.FindPlayer(msgObj.playerName, out player))
+        if(!StateData.PlayerInRoom(newPlayer.Uid,out tempPlayer))
         {
-            var avatar = StateData.playersAvatarsPool[Random.Range(0, StateData.playersAvatarsPool.Count)];
-            StateData.playersAvatarsPool.Remove(avatar);
+            tempPlayer = new Player(newPlayer.Uid, newPlayer.Name);
+            tempPlayer.State = DrawingGameStates.Lobby.ToString();
 
-            player = new DrawingPlayer(msgObj.playerName, avatar);
-            StateData.Players.Add(player);
-
-            panel.SetPlayerConnected(msgObj.playerName, avatar);
+            StateData.AddPlayer(tempPlayer);
+            panel.SetPlayerConnected(tempPlayer);
         }
 
-        var msgParams = new List<WebSocketMessageParam>()
-        {
-            new WebSocketMessageParam("toPlayer",player.playerName),
-            new WebSocketMessageParam("state","Lobby"),
-        };
+        // type, roomState, playersState
+        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
+    }
 
-        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
+    public void OnPlayerAvatarDrawing(PlayerDrawingMsg playerDrawing)
+    {
+        Player tempPlayer;
+
+        if (StateData.PlayerInRoom(playerDrawing.Uid, out tempPlayer))
+        {
+            tempPlayer.Avatar = new Drawing()
+            {
+                Uid = tempPlayer.Uid,
+                Base64Texture = playerDrawing.DrawingBase64,
+            };
+
+            tempPlayer.Ready = true;
+
+            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
+        }
     }
 
     private void OnStartGame()

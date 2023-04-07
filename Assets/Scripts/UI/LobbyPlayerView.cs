@@ -13,8 +13,9 @@ public class LobbyPlayerView : MonoBehaviour
     [SerializeField] private GameObject loading;
     [SerializeField] private GameObject doneLoading;
     [SerializeField] private Image drawingImg;
-    
 
+
+    public string uid;
     public string playerName;
 
     public void SetAvatar(Sprite sprite)
@@ -22,8 +23,9 @@ public class LobbyPlayerView : MonoBehaviour
         avatarImg.sprite = sprite;
     }
 
-    public void SetInfo(string name)
+    public void SetInfo(string uid, string name)
     {
+        this.uid = uid;
         playerName = name;
 
         nameTxt.text = name;

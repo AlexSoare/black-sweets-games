@@ -18,15 +18,15 @@ public class StateMachineBase<T,W> : MonoBehaviour where T: Enum where W: new()
     private KeyValuePair<T, BaseState<T, W>> currentState = new KeyValuePair<T, BaseState<T, W>>();
 
     public T CurrentState { get { return currentState.Key; } }
-    public W GlobalState;
-
+    public W GlobalStatesData;
+     
     protected void AddState(T stateType, BaseState<T, W> state)
     {
-        if (GlobalState == null)
-            GlobalState = new W();
+        if (GlobalStatesData == null)
+            GlobalStatesData = new W();
 
         state.ChangeState = ChangeState;
-        state.StateData = GlobalState;
+        state.StateData = GlobalStatesData;
 
         statesDict.Add(stateType, state);
     }

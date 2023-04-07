@@ -35,7 +35,7 @@ public class ShowingTotalScorePanel : MonoBehaviour
         foreach (var p in playerScores)
         {
             var tempPlayer = Instantiate(playerView, playersParent);
-            tempPlayer.SetInfo(p);
+            //tempPlayer.SetInfo(p);
             tempPlayer.gameObject.SetActive(true);
 
             playerViews.Add(tempPlayer);

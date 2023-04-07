@@ -5,6 +5,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using NativeWebSocket;
+using System.Linq.Expressions;
 
 public interface IQueryRequest
 {
@@ -36,33 +37,78 @@ public enum WebSocketMessageType
 {
     PlayerConnected,
     RoomStateUpdate,
-    PlayerData,
+    PlayerInputUpdate,
     PingPlayer,
     Error
 }
 
-[Serializable]
-public class WebSocketMessageParam
+public interface IWebSocketMsg { }
+public interface IWebSocketMsgListener {
+    int GetHash();
+    void Trigger(string json);
+}
+
+public interface IPlayerState
 {
-    public string paramName;
-    public string paramValue;
-    public WebSocketMessageParam(string paramName, string paramValue)
+    string GetUid();
+}
+
+[Serializable]
+public class PlayerStateMessage<W> where W : IPlayerState
+{
+    [SerializeField]
+    public string Uid;
+    [SerializeField]
+    public W State;
+
+    public PlayerStateMessage() { }
+    public PlayerStateMessage(W state)
     {
-        this.paramName = paramName;
-        this.paramValue = paramValue;
+        Uid = state.GetUid();
+        State = state;
     }
 }
 
 [Serializable]
-public class WebSocketMessage
+public class WebSocketMessage<T, W> where T : IWebSocketMsg where W : IPlayerState
 {
-    [SerializeField] public string msgType;
-    [SerializeField] public List<WebSocketMessageParam> data;
+    [SerializeField]
+    public string Type;
+    [SerializeField]
+    public T RoomState;
+    [SerializeField]
+    public List<PlayerStateMessage<W>> PlayersState;
 
-    public WebSocketMessage(string msgType, List<WebSocketMessageParam> data)
+    public WebSocketMessage() { }
+
+    public WebSocketMessage(WebSocketMessageType type, T roomState, List<W> playersState)
     {
-        this.msgType = msgType;
-        this.data = data;
+        Type = type.ToString();
+        RoomState = roomState;
+        PlayersState = new List<PlayerStateMessage<W>>();
+        foreach (var p in playersState)
+            PlayersState.Add(new PlayerStateMessage<W>(p));
+    }
+}
+
+public class WebSocketMsgListener<T> : IWebSocketMsgListener
+{
+    public Action<T> Callback;
+
+    public WebSocketMsgListener(Action<T> callback)
+    {
+        Callback = callback;
+    }
+
+    public void Trigger(string json)
+    {
+        var msgObj = JsonUtility.FromJson<T>(json);
+        Callback(msgObj);
+    }
+
+    public int GetHash()
+    {
+        return Callback.GetHashCode();
     }
 }
 
@@ -84,7 +130,7 @@ public static class ServerAPI
 
     private static WebSocket webSocket;
     private static List<string> webSocketEventsQueue = new List<string>();
-    private static Dictionary<WebSocketMessageType, List<Action<string>>> webSocketMessageListeners = new Dictionary<WebSocketMessageType, List<Action<string>>>();
+    private static Dictionary<WebSocketMessageType, List<IWebSocketMsgListener>> webSocketMessageListeners = new Dictionary<WebSocketMessageType, List<IWebSocketMsgListener>>();
     private static Action<bool> webSocketConnectedCallback;
     private static bool clientConnectedToWebSocket;
 
@@ -129,23 +175,33 @@ public static class ServerAPI
 
         webSocket.Connect();
     }
-    public static void AddWebSocketMessageCallback(WebSocketMessageType type, Action<string> callBack)
+    public static void AddWebSocketMessageCallback<T>(WebSocketMessageType type, Action<T> callback) where T: IWebSocketMsg
     {
+        
         if (!webSocketMessageListeners.ContainsKey(type))
-            webSocketMessageListeners.Add(type, new List<Action<string>>());
+            webSocketMessageListeners.Add(type, new List<IWebSocketMsgListener>());
 
-        webSocketMessageListeners[type].Add(callBack);
+        var listener = new WebSocketMsgListener<T>(callback);
+
+        webSocketMessageListeners[type].Add(listener);
     }
-    public static void RemoveWebSocketMessageCallback(WebSocketMessageType type, Action<string> callBack)
+
+    public static void RemoveWebSocketMessageCallback<T>(WebSocketMessageType type, Action<T> callback) where T : IWebSocketMsg
     {
         if (webSocketMessageListeners.ContainsKey(type))
-            webSocketMessageListeners[type].Remove(callBack);
+        {
+            var toRemove = webSocketMessageListeners[type].Find(l => l.GetHash() == callback.GetHashCode());
+
+            if(toRemove != null)
+                webSocketMessageListeners[type].Remove(toRemove);
+        }
     }
-    public static void SendToWebSocket(WebSocketMessageType type, List<WebSocketMessageParam> msg)
+
+    public static void SendToWebSocket<T, W>(WebSocketMessageType type, T roomState, List<W> playersState) where T : IWebSocketMsg where W : IPlayerState
     {
-        var toSend = new WebSocketMessage(type.ToString(), msg);
-        Debug.LogError("Send to WS: " + JsonUtility.ToJson(toSend));
-        webSocket.SendText(JsonUtility.ToJson(toSend));
+        var msgToSend = new WebSocketMessage<T, W>(type, roomState, playersState);
+
+        webSocket.SendText(JsonUtility.ToJson(msgToSend));
     }
 #endregion
 
@@ -156,14 +212,15 @@ public static class ServerAPI
             var msgObj = JsonUtility.FromJson<RawWebSocketMessage>(data);
 
             var msgType = (WebSocketMessageType)Enum.Parse(typeof(WebSocketMessageType),msgObj.msgType);
-        
+            
             if (webSocketMessageListeners.ContainsKey(msgType))
                 foreach (var listener in webSocketMessageListeners[msgType])
-                    listener(msgObj.msg);
+                    listener.Trigger(msgObj.msg);
         }
 
         webSocketEventsQueue.Clear();
     }
+
     private static IEnumerator GetReuqest<T>(string url, IQueryRequest request, Action<T> responseCallback)
     {
         using (UnityWebRequest unityReq = UnityWebRequest.Get(url))

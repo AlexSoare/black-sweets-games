@@ -33,7 +33,6 @@ public class GameManager : MonoBehaviour
         this.roomCode = roomCode;
         openRoomPanel.Hide();
 
-        //StartCoroutine(BackgroundManager.Instance.UpdateGridRow(0.01f,1f));
         ServerAPI.ConnectToWebSocket(roomCode, WebSocketConnected);
     }
     private void WebSocketConnected(bool success)

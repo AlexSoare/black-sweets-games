@@ -61,8 +61,8 @@ public class ShowingRoundScorePanel : MonoBehaviour
 
         if (real)
         {
-            foreach (var p in currentPlayers)
-                p.SetInfo(p.playerName + " +1000");
+            //foreach (var p in currentPlayers)
+            //    p.SetInfo(p.playerName + " +1000");
         }
 
         var score = 1000 * players.Count;
@@ -88,7 +88,7 @@ public class ShowingRoundScorePanel : MonoBehaviour
         {
             var tempPlayer = Instantiate(playerView, playersParent);
             tempPlayer.gameObject.SetActive(true);
-            tempPlayer.SetInfo(p);
+            //tempPlayer.SetInfo(p);
 
             currentPlayers.Add(tempPlayer);
 

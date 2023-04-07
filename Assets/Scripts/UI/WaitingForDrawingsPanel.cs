@@ -13,7 +13,7 @@ public class WaitingForDrawingsPanel : MonoBehaviour
 
     private List<LobbyPlayerView> playersView;
 
-    public void Init(List<string> playerNames)
+    public void Init(List<Player> players)
     {
         if (playersView != null)
         {
@@ -24,10 +24,10 @@ public class WaitingForDrawingsPanel : MonoBehaviour
         else
             playersView = new List<LobbyPlayerView>();
 
-        foreach (var p in playerNames)
+        foreach (var p in players)
         {
             var tempPlayer = Instantiate(playerPrefab, playersParent);
-            tempPlayer.SetInfo(p);
+            tempPlayer.SetInfo(p.Uid,p.Name);
             tempPlayer.SetWaitingForDrawing();
             tempPlayer.gameObject.SetActive(true);
 
@@ -44,10 +44,10 @@ public class WaitingForDrawingsPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void PlayerSentHisDrawing(string playerName, Sprite drawing)
+    public void PlayerSentHisDrawing(string uid, Sprite drawing)
     {
         foreach (var p in playersView)
-            if (p.playerName == playerName)
+            if (p.uid == uid)
                 p.SetDone(drawing);
     }
 

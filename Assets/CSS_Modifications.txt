@@ -1,0 +1,3 @@
+woocomerce.min.css
+	.single_variation
+		- removed "float:left"

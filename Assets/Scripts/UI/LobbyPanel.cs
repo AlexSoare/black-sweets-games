@@ -3,11 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using WebSocketSharp;
+using UnityEngine.UI;
 
 public class LobbyPanel : MonoBehaviour
 {
     [SerializeField] private Transform playersParent;
     [SerializeField] private LobbyPlayerView playerPrefab;
+
+    public Image testImage;
+    public string imgBase64;
+
+    [ContextMenu("Test")]
+    public void Test()
+    {
+        var sprite = DrawingGame.GetDrawingSprite(imgBase64,true);
+        testImage.sprite = sprite;
+    }
 
     private Action onStartGameCallback;
 
@@ -26,13 +37,13 @@ public class LobbyPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void SetPlayerConnected(string playerName, Sprite avatar)
+    public void SetPlayerConnected(Player player)
     {
         var newPlayer = Instantiate(playerPrefab, playersParent);
 
         newPlayer.gameObject.SetActive(true);
-        newPlayer.SetInfo(playerName);
-        newPlayer.SetAvatar(avatar);
+        newPlayer.SetInfo(player.Uid,player.Name);
+        //newPlayer.SetAvatar(avatar);
     }
 
     public void OnStartButton()

@@ -6,9 +6,8 @@ using UnityEngine.UI;
 
 using Convert = System.Convert;
 using MemoryStream = System.IO.MemoryStream;
-//...
 
-public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGamePrefs>
+public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameStateData>
 {
     private class PlayerDrawing
     {
@@ -16,11 +15,6 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameP
         public string titleToDraw;
     }
 
-    private class PlayerDataMessage
-    {
-        public string playerName;
-        public string drawingBase64;
-    }
 
     private WaitingForDrawingsPanel panel;
 
@@ -35,107 +29,72 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameP
 
     public override void OnEnterState()
     {
-        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.PlayerData, OnPlayerDataReceived);
-        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
-        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.RoomStateUpdate, OnPlayersTitles);
+        StateData.ResetPlayers();
 
-        var msgParams = new List<WebSocketMessageParam>()
+        ServerAPI.AddWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
+
+        // Init drawings
+        var drawings = DrawingGame.GenerateTitlesToDraw(StateData.Players.Count);
+
+        for (int i = 0; i < StateData.Players.Count; i++)
         {
-            new WebSocketMessageParam("state","WaitingForDrawings"),
-        };
-        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
+            StateData.Players[i].State = DrawingGameStates.WaitingForDrawings.ToString();
+            StateData.Players[i].TitleToDraw = new Title(drawings[i], StateData.Players[i].Uid);
+        }
+
+        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
+        //
 
         timer = 5;
 
-        List<string> playerNames = new List<string>();
-        foreach (var p in StateData.Players)
-            playerNames.Add(p.playerName);
-
-        panel.Init(playerNames);
-
+        panel.Init(StateData.Players);
         panel.Show();
     }
 
     public override void OnExitState()
     {
-        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.PlayerData, OnPlayerDataReceived);
-        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
-        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.RoomStateUpdate, OnPlayersTitles);
+        ServerAPI.RemoveWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
         panel.Hide();
     }
 
-    private void OnPlayersTitles(string msg)
+    private void OnPlayerDataReceived(PlayerDrawingMsg playerDrawing)
     {
-        var msgObj = JsonConvert.DeserializeObject<List<PlayerDrawing>>(msg);
+        Player tempPlayer;
 
-        foreach (var p in msgObj)
+        if (StateData.PlayerInRoom(playerDrawing.Uid, out tempPlayer))
         {
-            DrawingPlayer player;
-            if (StateData.FindPlayer(p.playerName, out player))
-                player.currentTitleToDraw = p.titleToDraw;
-        }
-    }
+            tempPlayer.Drawing = new Drawing()
+            {
+                Uid = tempPlayer.Uid,
+                Base64Texture = playerDrawing.DrawingBase64,
+            };
 
-    private void OnPlayerDataReceived(string msg)
-    {
-        var msgObj = JsonUtility.FromJson<PlayerDataMessage>(msg);
+            tempPlayer.Ready = true;
 
-        DrawingPlayer player;
+            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
 
-        if (!StateData.FindPlayer(msgObj.playerName, out player) || player.ready)
-            return;
+            byte[] imageBytes = Convert.FromBase64String(playerDrawing.DrawingBase64);
 
-        byte[] imageBytes = Convert.FromBase64String(msgObj.drawingBase64);
+            Texture2D tex = new Texture2D(2, 2);
+            tex.LoadImage(imageBytes);
 
-        Texture2D tex = new Texture2D(2, 2);
-        tex.LoadImage(imageBytes);
+            // Remove white bkg
+            /*Color[] pixels = tex.GetPixels(0, 0, tex.width, tex.height, 0);
+            for (int p = 0; p < pixels.Length; p++)
+            {
+                if (pixels[p] == Color.white)
+                    pixels[p] = new Color(0, 0, 0, 0);
+            }
+            tex.SetPixels(0, 0, tex.width, tex.height, pixels, 0);
+            tex.Apply();*/
+            // ----
 
-        // Remove white bkg
-        /*Color[] pixels = tex.GetPixels(0, 0, tex.width, tex.height, 0);
-        for (int p = 0; p < pixels.Length; p++)
-        {
-            if (pixels[p] == Color.white)
-                pixels[p] = new Color(0, 0, 0, 0);
-        }
-        tex.SetPixels(0, 0, tex.width, tex.height, pixels, 0);
-        tex.Apply();*/
-        // ----
+            Sprite sprite = Sprite.Create(tex, new Rect(0.0f, 0.0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100.0f);
 
-        Sprite sprite = Sprite.Create(tex, new Rect(0.0f, 0.0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100.0f);
+            panel.PlayerSentHisDrawing(playerDrawing.Uid, sprite);
 
-        player.ready = true;
-        player.currentDrawing = sprite;
-
-        Debug.LogError(player.currentDrawing);
-
-        panel.PlayerSentHisDrawing(msgObj.playerName, sprite);
-
-        var msgParams = new List<WebSocketMessageParam>()
-        {
-            new WebSocketMessageParam("toPlayer",player.playerName),
-            new WebSocketMessageParam("ready","True"),
-        };
-        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-
-
-
-    }
-    private void OnPlayerConnected(string playerName)
-    {
-        var msgObj = JsonUtility.FromJson<PlayerConnectedMsg>(playerName);
-
-        DrawingPlayer player;
-        if (StateData.FindPlayer(msgObj.playerName, out player))
-        {
-            var msgParams = new List<WebSocketMessageParam>()
-                {
-                    new WebSocketMessageParam("toPlayer",msgObj.playerName),
-                    new WebSocketMessageParam("state","WaitingForDrawings"),
-                    new WebSocketMessageParam("ready",player.ready.ToString()),
-                };
-
-            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
+            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
         }
     }
 
@@ -143,18 +102,18 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameP
     {
         timer -= Time.deltaTime;
 
-        if (StateData.AllPlayersReady())
-        {
-            startingTimer -= Time.deltaTime;
+        //if (StateData.AllPlayersReady())
+        //{
+        //    startingTimer -= Time.deltaTime;
 
-            panel.SetTimer("Starting in :" + (int)startingTimer);
+        //    panel.SetTimer("Starting in :" + (int)startingTimer);
 
-            if (startingTimer <= 0)
-                ChangeState(DrawingGameStates.ShowingDrawings);
-        }
-        else
-        {
-            panel.SetTimer("Time left :" + (int)timer);
-        }
+        //    if (startingTimer <= 0)
+        //        ChangeState(DrawingGameStates.ShowingDrawings);
+        //}
+        //else
+        //{
+        //    panel.SetTimer("Time left :" + (int)timer);
+        //}
     }
 }
