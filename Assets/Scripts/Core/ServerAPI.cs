@@ -38,11 +38,12 @@ public enum WebSocketMessageType
     PlayerConnected,
     RoomStateUpdate,
     PlayerInputUpdate,
+    PlayerCustomMessage,
     PingPlayer,
     Error
 }
 
-public interface IWebSocketMsg { }
+//public interface IWebSocketMsg { }
 public interface IWebSocketMsgListener {
     int GetHash();
     void Trigger(string json);
@@ -70,7 +71,7 @@ public class PlayerStateMessage<W> where W : IPlayerState
 }
 
 [Serializable]
-public class WebSocketMessage<T, W> where T : IWebSocketMsg where W : IPlayerState
+public class WebSocketMessage<T, W> /*where T : IWebSocketMsg*/ where W : IPlayerState
 {
     [SerializeField]
     public string Type;
@@ -175,7 +176,7 @@ public static class ServerAPI
 
         webSocket.Connect();
     }
-    public static void AddWebSocketMessageCallback<T>(WebSocketMessageType type, Action<T> callback) where T: IWebSocketMsg
+    public static void AddWebSocketMessageCallback<T>(WebSocketMessageType type, Action<T> callback)// where T: IWebSocketMsg
     {
         
         if (!webSocketMessageListeners.ContainsKey(type))
@@ -186,7 +187,7 @@ public static class ServerAPI
         webSocketMessageListeners[type].Add(listener);
     }
 
-    public static void RemoveWebSocketMessageCallback<T>(WebSocketMessageType type, Action<T> callback) where T : IWebSocketMsg
+    public static void RemoveWebSocketMessageCallback<T>(WebSocketMessageType type, Action<T> callback) //where T : IWebSocketMsg
     {
         if (webSocketMessageListeners.ContainsKey(type))
         {
@@ -197,7 +198,7 @@ public static class ServerAPI
         }
     }
 
-    public static void SendToWebSocket<T, W>(WebSocketMessageType type, T roomState, List<W> playersState) where T : IWebSocketMsg where W : IPlayerState
+    public static void SendToWebSocket<T, W>(WebSocketMessageType type, T roomState, List<W> playersState)/* where T : IWebSocketMsg*/ where W : IPlayerState
     {
         var msgToSend = new WebSocketMessage<T, W>(type, roomState, playersState);
 

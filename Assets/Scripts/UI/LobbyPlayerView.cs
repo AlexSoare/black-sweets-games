@@ -14,33 +14,32 @@ public class LobbyPlayerView : MonoBehaviour
     [SerializeField] private GameObject doneLoading;
     [SerializeField] private Image drawingImg;
 
-
-    public string uid;
-    public string playerName;
+    public Player player;
 
     public void SetAvatar(Sprite sprite)
     {
         avatarImg.sprite = sprite;
     }
-
-    public void SetInfo(string uid, string name)
+    public void SetDrawing(Sprite sprite)
     {
-        this.uid = uid;
-        playerName = name;
+        drawingImg.sprite = sprite;
+    }
+    public void Init(Player player)
+    {
+        this.player = player;
 
-        nameTxt.text = name;
+        nameTxt.text = player.Name;
     }
 
-    public void SetWaitingForDrawing()
+    public void SetLoading()
     {
         loading.SetActive(true);
     }
 
-    public void SetDone(Sprite drawing)
+    public void SetDone()
     {
         loading.SetActive(false);
         doneLoading.SetActive(true);
-        drawingImg.sprite = drawing;
     }
 
     public void SetScore(string score)

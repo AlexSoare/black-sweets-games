@@ -95,7 +95,7 @@ public class Round
 }
 
 [Serializable]
-public class DrawingGameStateData : IWebSocketMsg
+public class DrawingGameStateData// : IWebSocketMsg
 {
     [SerializeField]
     public string State;
@@ -152,7 +152,7 @@ public class DrawingGameStateData : IWebSocketMsg
 }
 
 [Serializable]
-public class PlayerConnectedMsg : IWebSocketMsg
+public class PlayerConnectedMsg// : IWebSocketMsg
 {
     [SerializeField]
     public string Name;
@@ -162,12 +162,20 @@ public class PlayerConnectedMsg : IWebSocketMsg
     public bool Reconnected;
 }
 [Serializable]
-public class PlayerDrawingMsg : IWebSocketMsg
+public class PlayerDrawingMsg// : IWebSocketMsg
 {
     [SerializeField]
     public string Uid;
     [SerializeField]
     public string DrawingBase64;
+}
+[Serializable]
+public class PlayerCustomMsg// : IWebSocketMsg
+{
+    [SerializeField]
+    public string Uid;
+    [SerializeField]
+    public string Msg;
 }
 
 public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateData>

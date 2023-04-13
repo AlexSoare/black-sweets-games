@@ -18,6 +18,7 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
 
         ServerAPI.AddWebSocketMessageCallback<PlayerConnectedMsg>(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
         ServerAPI.AddWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerAvatarDrawing);
+        ServerAPI.AddWebSocketMessageCallback<PlayerCustomMsg>(WebSocketMessageType.PlayerCustomMessage, OnPlayerCustomMessage);
 
         this.panel.Init(OnStartGame);
         this.panel.Show();
@@ -27,6 +28,8 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
     {
         this.panel.Hide();
         ServerAPI.RemoveWebSocketMessageCallback<PlayerConnectedMsg>(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
+        ServerAPI.RemoveWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerAvatarDrawing);
+        ServerAPI.RemoveWebSocketMessageCallback<PlayerCustomMsg>(WebSocketMessageType.PlayerCustomMessage, OnPlayerCustomMessage);
     }
 
     private void OnPlayerConnected(PlayerConnectedMsg newPlayer)
@@ -46,7 +49,7 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
         ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
     }
 
-    public void OnPlayerAvatarDrawing(PlayerDrawingMsg playerDrawing)
+    private void OnPlayerAvatarDrawing(PlayerDrawingMsg playerDrawing)
     {
         Player tempPlayer;
 
@@ -60,13 +63,23 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
 
             tempPlayer.Ready = true;
 
+            var avatarSprite = DrawingGame.GetDrawingSprite(playerDrawing.DrawingBase64);
+
+            panel.SetPlayerDone(tempPlayer);
+            panel.SetPlayerAvatar(tempPlayer, avatarSprite);
+
             ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
         }
     }
 
+    private void OnPlayerCustomMessage(PlayerCustomMsg msg)
+    {
+        if(msg.Msg == "Start")
+            OnStartGame();
+    }
+
     private void OnStartGame()
     {
-        //CoroutineHelper.Start(BackgroundManager.Instance.UpdateGridRow(0.01f, 1f));
         ChangeState(DrawingGameStates.WaitingForDrawings);
     }
 

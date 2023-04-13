@@ -27,8 +27,8 @@ public class WaitingForDrawingsPanel : MonoBehaviour
         foreach (var p in players)
         {
             var tempPlayer = Instantiate(playerPrefab, playersParent);
-            tempPlayer.SetInfo(p.Uid,p.Name);
-            tempPlayer.SetWaitingForDrawing();
+            tempPlayer.Init(p);
+            tempPlayer.SetLoading();
             tempPlayer.gameObject.SetActive(true);
 
             playersView.Add(tempPlayer);
@@ -44,11 +44,11 @@ public class WaitingForDrawingsPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public void PlayerSentHisDrawing(string uid, Sprite drawing)
+    public void SetPlayerDrawing(Player player, Sprite drawing)
     {
         foreach (var p in playersView)
-            if (p.uid == uid)
-                p.SetDone(drawing);
+            if (p.player.Uid == player.Uid)
+                p.SetDrawing(drawing);
     }
 
     public void SetTimer(string time)
