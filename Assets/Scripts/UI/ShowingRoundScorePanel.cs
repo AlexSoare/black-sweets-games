@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using UnityEngine.UI;
+using TMPro;
 
 public class ShowingRoundScorePanel : MonoBehaviour
 {
@@ -14,6 +15,9 @@ public class ShowingRoundScorePanel : MonoBehaviour
 
     [SerializeField] private Transform realPlayersParent;
     [SerializeField] private LobbyPlayerView realPlayerView;
+
+    [SerializeField] private TextMeshProUGUI titleText;
+    [SerializeField] private GameObject writtenByBkg;
 
     private List<LobbyPlayerView> currentPlayers;
     private List<LobbyPlayerView> currentRealPlayers;
@@ -32,7 +36,7 @@ public class ShowingRoundScorePanel : MonoBehaviour
         this.drawing.sprite = drawing;
     }
 
-    public IEnumerator SetTitle(string title, List<string> players, List<string> realPlayers, bool real)
+    public IEnumerator SetTitle(Title title, List<Player> players, List<Player> realPlayers, bool real)
     {
         // Clean up
         titleView.SetTitle(title);
@@ -49,46 +53,55 @@ public class ShowingRoundScorePanel : MonoBehaviour
                 Destroy(p.gameObject);
         else currentRealPlayers = new List<LobbyPlayerView>();
         currentRealPlayers.Clear();
+
+        writtenByBkg.gameObject.SetActive(false);
         // -------------
 
+        titleText.text = "ALES DE ...";
         yield return new WaitForSeconds(1.5f);
         yield return StartCoroutine(ShowPlayersRoutine(players));
 
+      
         if (real)
+        {
+            titleText.text = "TITLUL REAL";
             titleView.SetReal();
-        else
-            titleView.SetFalse(realPlayers);
 
-        if (real)
-        {
-            //foreach (var p in currentPlayers)
-            //    p.SetInfo(p.playerName + " +1000");
+            foreach (var p in currentPlayers)
+                p.SetScore("+1000");
         }
-
-        var score = 1000 * players.Count;
-
-        /*foreach (var p in realPlayers)
+        else
         {
-            var tempRealPlayer = Instantiate(realPlayerView, realPlayersParent);
+            writtenByBkg.gameObject.SetActive(true);
 
-            tempRealPlayer.SetInfo(p);
-            tempRealPlayer.SetScore("+" + score);
+            titleText.text = "SCRIS DE ...";
+            titleView.SetFalse();
 
-            tempRealPlayer.gameObject.SetActive(true);
+            var score = 1000 * players.Count;
 
-            currentRealPlayers.Add(tempRealPlayer);
-        }*/
+            foreach (var p in realPlayers)
+            {
+                var tempRealPlayer = Instantiate(realPlayerView, realPlayersParent);
+
+                tempRealPlayer.Init(p);
+                tempRealPlayer.SetScore("+" + score);
+
+                tempRealPlayer.gameObject.SetActive(true);
+
+                currentRealPlayers.Add(tempRealPlayer);
+            }
+        }
 
         yield return new WaitForSeconds(2.5f);
     }
 
-    private IEnumerator ShowPlayersRoutine(List<string> players)
+    private IEnumerator ShowPlayersRoutine(List<Player> players)
     {
         foreach(var p in players)
         {
             var tempPlayer = Instantiate(playerView, playersParent);
             tempPlayer.gameObject.SetActive(true);
-            //tempPlayer.SetInfo(p);
+            tempPlayer.Init(p);
 
             currentPlayers.Add(tempPlayer);
 

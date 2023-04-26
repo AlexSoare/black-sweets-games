@@ -323,7 +323,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8773730592289674021
 RectTransform:
   m_ObjectHideFlags: 0
@@ -581,23 +581,43 @@ MonoBehaviour:
       Uid: 
       Base64Texture: 
       Shown: 0
+      Title:
+        Uid: 
+        TitleText: 
+        WrittedByUid: []
+        ChosenByUid: []
+        Original: 0
     Drawing:
       Uid: 
       Base64Texture: 
       Shown: 0
+      Title:
+        Uid: 
+        TitleText: 
+        WrittedByUid: []
+        ChosenByUid: []
+        Original: 0
     TitleToDraw:
+      Uid: 
       TitleText: 
       WrittedByUid: []
       ChosenByUid: []
+      Original: 0
     WrittenTitle:
+      Uid: 
       TitleText: 
       WrittedByUid: []
       ChosenByUid: []
+      Original: 0
     ChosenTitle:
+      Uid: 
       TitleText: 
       WrittedByUid: []
       ChosenByUid: []
+      Original: 0
+    TitlesToChooseFrom: []
     Score: 0
+    OwnDrawingShown: 0
 --- !u!1 &6597562004984915126
 GameObject:
   m_ObjectHideFlags: 0

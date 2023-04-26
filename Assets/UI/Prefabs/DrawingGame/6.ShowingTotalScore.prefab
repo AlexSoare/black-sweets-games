@@ -248,7 +248,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 99}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 50, y: 38}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6285022431886596187
 CanvasRenderer:
@@ -344,7 +344,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5255394442921266167
 RectTransform:
   m_ObjectHideFlags: 0
@@ -802,7 +802,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1207375306143416298
 RectTransform:
   m_ObjectHideFlags: 0
@@ -818,9 +818,9 @@ RectTransform:
   m_Father: {fileID: 8856817226786491079}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 260.54016, y: -54.9354}
   m_SizeDelta: {x: 471.0803, y: 71.8708}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7481704786940666322
@@ -874,10 +874,54 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   nameTxt: {fileID: 5255394443043207006}
-  scoreTxt: {fileID: 0}
+  scoreTxt: {fileID: 5255394443043207006}
   avatarImg: {fileID: 0}
   loading: {fileID: 0}
   doneLoading: {fileID: 0}
   drawingImg: {fileID: 0}
-  uid: 
-  playerName: 
+  player:
+    Name: 
+    State: 
+    Uid: 
+    Ready: 0
+    Avatar:
+      Uid: 
+      Base64Texture: 
+      Shown: 0
+      Title:
+        Uid: 
+        TitleText: 
+        WrittedByUid: []
+        ChosenByUid: []
+        Original: 0
+    Drawing:
+      Uid: 
+      Base64Texture: 
+      Shown: 0
+      Title:
+        Uid: 
+        TitleText: 
+        WrittedByUid: []
+        ChosenByUid: []
+        Original: 0
+    TitleToDraw:
+      Uid: 
+      TitleText: 
+      WrittedByUid: []
+      ChosenByUid: []
+      Original: 0
+    WrittenTitle:
+      Uid: 
+      TitleText: 
+      WrittedByUid: []
+      ChosenByUid: []
+      Original: 0
+    ChosenTitle:
+      Uid: 
+      TitleText: 
+      WrittedByUid: []
+      ChosenByUid: []
+      Original: 0
+    TitlesToChooseFrom: []
+    Score: 0
+    OwnDrawingShown: 0

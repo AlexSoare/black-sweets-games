@@ -19,7 +19,7 @@ public class ShowingTotalScorePanel : MonoBehaviour
         gameObject.SetActive(true);
     }
 
-    public void Init(List<string> playerScores, Action onRestartCallback)
+    public void Init(List<Player> players, Action onRestartCallback)
     {
         endText.gameObject.SetActive(false);
         restartButton.gameObject.SetActive(false);
@@ -32,11 +32,13 @@ public class ShowingTotalScorePanel : MonoBehaviour
         else playerViews = new List<LobbyPlayerView>();
         playerViews.Clear();
 
-        foreach (var p in playerScores)
+        foreach (var p in players)
         {
             var tempPlayer = Instantiate(playerView, playersParent);
-            //tempPlayer.SetInfo(p);
             tempPlayer.gameObject.SetActive(true);
+
+            tempPlayer.Init(p);
+            tempPlayer.SetScore(p.Name + ": " + p.Score);
 
             playerViews.Add(tempPlayer);
         }

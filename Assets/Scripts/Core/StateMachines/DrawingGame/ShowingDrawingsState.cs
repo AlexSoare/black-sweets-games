@@ -1,146 +1,103 @@
-//using System.Collections;
-//using System.Collections.Generic;
-//using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-//public class ShowingDrawingsState : BaseState<DrawingGameStates, DrawingGamePrefs>
-//{
-//    private class PlayerDataMessage
-//    {
-//        public string playerName;
-//        public string title;
-//    }
-//    private class PlayerDrawingToShowMsg
-//    {
-//        public string playerName;
-//        public bool last;
-//    }
+public class ShowingDrawingsState : BaseState<DrawingGameStates, DrawingGameStateData>
+{
+    private ShowingDrawingsPanel panel;
 
-//    private ShowingDrawingsPanel panel;
+    private float timer;
+    private float startingTimer;
 
-//    private float timer;
-//    private float startingTimer;
+    public ShowingDrawingsState(ShowingDrawingsPanel panel)
+    {
+        this.panel = panel;
 
-//    public ShowingDrawingsState(ShowingDrawingsPanel panel)
-//    {
-//        this.panel = panel;
-//        timer = 10;
-//        startingTimer = 2;
-//    }
+        timer = 20;
+        startingTimer = 2;
+    }
 
-//    public override void OnEnterState()
-//    {
-//        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.PlayerData, OnPlayerDataReceived);
-//        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.RoomStateUpdate, OnPlayerDrawingToShow);
+    public override void OnEnterState()
+    {
+        ServerAPI.AddWebSocketMessageCallback<PlayerTitleMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
-//        var msgParams = new List<WebSocketMessageParam>()
-//        {
-//            new WebSocketMessageParam("state", "ShowingDrawings")
-//        };
-//        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
+        StateData.SetState(DrawingGameStates.ShowingDrawings.ToString());
 
-//        StateData.currentDrawingTitles = new List<DrawingTitle>();
+        if(StateData.Drawings == null)
+            StateData.Drawings = new List<Drawing>();
 
-//        StateData.ResetPlayers();
+        StateData.CurrentTitles = new List<Title>();
+        StateData.ResetPlayers();
 
-//        foreach (var p in StateData.Players)
-//        {
-//            msgParams = new List<WebSocketMessageParam>()
-//            {
-//                new WebSocketMessageParam("toPlayer", p.playerName),
-//                new WebSocketMessageParam("ready", "False"),
-//                new WebSocketMessageParam("ownDrawingShown", "False")
-//            };
-//            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-//        }
+        foreach (var p in StateData.Players)
+        {
+            p.OwnDrawingShown = false;
+            StateData.Drawings.Add(p.Drawing);
+        }
 
-//        panel.Show();
-//    }
+        var currentDrawing = DrawingGame.GetNextDrawingToShow(StateData.Drawings);
 
-//    private void OnPlayerDataReceived(string playerDataJSON)
-//    {
-//        var msgObj = JsonUtility.FromJson<PlayerDataMessage>(playerDataJSON);
+        if(currentDrawing != null)
+        {
+            var p = StateData.GetPlayer(currentDrawing.Uid);
+            p.OwnDrawingShown = true;
+            p.Ready = true;
 
-//        DrawingPlayer player;
+            StateData.CurrentDrawing = currentDrawing;
+            StateData.CurrentTitles.Add(currentDrawing.Title);
 
-//        if (StateData.FindPlayer(msgObj.playerName, out player))
-//        {
-//            if (player.ready)
-//                return;
+            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
 
-//            player.currentTitleWritten = msgObj.title;
-//            player.ready = true;
+            panel.Show();
+            panel.SetCurrentDrawing(DrawingGame.GetDrawingSprite(currentDrawing.Base64Texture));
+        }
+    }
 
-//            var titleAlreadyAdded = false;
+    private void OnPlayerDataReceived(PlayerTitleMsg playerTitle)
+    {
+        Player tempPlayer;
+        if (StateData.PlayerInRoom(playerTitle.Uid, out tempPlayer))
+        {
+            Title title;
 
-//            foreach(var t in StateData.currentDrawingTitles)
-//            {
-//                if(t.title == msgObj.title)
-//                {
-//                    titleAlreadyAdded = true;
-//                    t.playerNames.Add(player.playerName);
-//                }
-//            }
+            if(StateData.TitleAlreadyWritten(playerTitle.Title, out title))
+            {
+                title.WrittedByUid.Add(playerTitle.Uid);
+            }else
+            {
+                title = new Title(playerTitle.Title, playerTitle.Uid);
+            }
 
-//            if(!titleAlreadyAdded)
-//                StateData.currentDrawingTitles.Add(new DrawingTitle(msgObj.title, player.playerName));
+            StateData.CurrentTitles.Add(title);
+            tempPlayer.Ready = true;
 
-//            var msgParams = new List<WebSocketMessageParam>()
-//            {
-//                new WebSocketMessageParam("toPlayer", player.playerName),
-//                new WebSocketMessageParam("ready", "True")
-//            };
-//            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-//        }
-//    }
-//    private void OnPlayerDrawingToShow(string playerNameJSON)
-//    {
-//        var msgObj = JsonUtility.FromJson<PlayerDrawingToShowMsg>(playerNameJSON);
+            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
+        }
+    }
 
-//        DrawingPlayer player;
-//        if (StateData.FindPlayer(msgObj.playerName, out player))
-//        {
-//            panel.SetCurrentDrawing(player.currentDrawing);
-   
-//            player.currentTitleWritten = player.currentTitleToDraw;
-//            player.ownDrawingShown = true;
-//            player.ready = true;
+    public override void OnExitState()
+    {
+        ServerAPI.RemoveWebSocketMessageCallback<PlayerTitleMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
-//            StateData.currentDrawingPlayer = player;
-//            StateData.lastDrawing = msgObj.last;
+        panel.Hide();
+    }
 
-//            var msgParams = new List<WebSocketMessageParam>()
-//            {
-//                new WebSocketMessageParam("toPlayer", player.playerName),
-//                new WebSocketMessageParam("ownDrawingShown", "True")
-//            };
-//            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-//        }
-//    }
+    public override void StateUpdate()
+    {
+        timer -= Time.deltaTime;
 
-//    public override void OnExitState()
-//    {
-//        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.PlayerData, OnPlayerDataReceived);
-//        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.RoomStateUpdate, OnPlayerDrawingToShow);
+        if (StateData.AllPlayersReady())
+        {
+            startingTimer -= Time.deltaTime;
 
-//        panel.Hide();
-//    }
+            panel.SetTimer("Rezultate in :" + (int)startingTimer);
 
-//    public override void StateUpdate()
-//    {
-//        timer -= Time.deltaTime;
-        
-
-//        if (StateData.AllPlayersReady())
-//        {
-//            startingTimer -= Time.deltaTime;
-
-//            panel.SetTimer("Starting in :" + (int)startingTimer);
-
-//            if(startingTimer<=0)
-//                ChangeState(DrawingGameStates.ShowingTitles);
-//        }else
-//        {
-//            panel.SetTimer("Time left :" + (int)timer);
-//        }
-//    }
-//}
+            if (startingTimer <= 0)
+                ChangeState(DrawingGameStates.ShowingTitles);
+        }
+        else
+        {
+            panel.SetTimer("Timp ramas :" + (int)timer);
+        }
+    }
+}

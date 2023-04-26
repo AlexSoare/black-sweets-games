@@ -36,7 +36,11 @@ public class Player : IPlayerState
     [SerializeField]
     public Title ChosenTitle;
     [SerializeField]
+    public List<Title> TitlesToChooseFrom;
+    [SerializeField]
     public int Score;
+    [SerializeField]
+    public bool OwnDrawingShown;
 
     public Player() { }
     public Player(string uid, string name)
@@ -55,15 +59,22 @@ public class Player : IPlayerState
 public class Title
 {
     [SerializeField]
+    public string Uid;
+    [SerializeField]
     public string TitleText;
     [SerializeField]
     public List<string> WrittedByUid;
     [SerializeField]
     public List<string> ChosenByUid;
+    [SerializeField]
+    public bool Original;
 
     public Title() { }
-    public Title(string title, string playerUid)
+    public Title(string title, string playerUid, bool original = false)
     {
+        Uid = Guid.NewGuid().ToString();
+        Original = original;
+
         TitleText = title;
 
         WrittedByUid = new List<string>();
@@ -83,6 +94,8 @@ public class Drawing
     public string Base64Texture;
     [SerializeField]
     public bool Shown;
+    [SerializeField]
+    public Title Title;
 }
 
 [Serializable]
@@ -95,7 +108,7 @@ public class Round
 }
 
 [Serializable]
-public class DrawingGameStateData// : IWebSocketMsg
+public class DrawingGameStateData
 {
     [SerializeField]
     public string State;
@@ -112,6 +125,13 @@ public class DrawingGameStateData// : IWebSocketMsg
     [SerializeField]
     public List<string> CurrentRoundWinners;
 
+    public void SetState(string state)
+    {
+        State = state;
+        foreach (var p in Players)
+            p.State = state;
+    }
+
     public bool PlayerInRoom(string uid, out Player player)
     {
         if (Players == null)
@@ -125,6 +145,14 @@ public class DrawingGameStateData// : IWebSocketMsg
         return player != null;
     }
 
+    public bool AllPlayersReady()
+    {
+        foreach (var p in Players)
+            if (!p.Ready)
+                return false;
+        return true;
+    }
+
     public void AddPlayer(Player player)
     {
         if (Players == null)
@@ -136,10 +164,60 @@ public class DrawingGameStateData// : IWebSocketMsg
             Debug.LogError("Trying to add an already existing user");
     }
 
+    public Player GetPlayer(string uid)
+    {
+        return Players.Find(p => p.Uid == uid);
+    }
+    public List<Player> GetPlayers(List<string> uids)
+    {
+        var playersToReturn = new List<Player>();
+
+        foreach (var p in uids)
+        {
+            var player = GetPlayer(p);
+            if (player != null)
+                playersToReturn.Add(player);
+        }
+
+        return playersToReturn;
+    }
+    public bool TitleAlreadyWritten(string titleText, out Title title)
+    {
+        foreach (var t in CurrentTitles)
+            if (t.TitleText == titleText)
+            {
+                title = t;
+                return true;
+            }
+
+        title = null;
+        return false;
+    }
+
+    public Title GetTitle(string uid)
+    {
+        return CurrentTitles.Find(t => t.Uid == uid);
+    }
+
     public void ResetPlayers()
     {
         foreach (var p in Players)
             p.Ready = false;
+    }
+
+    public void ResetEverything()
+    {
+        foreach (var p in Players)
+        {
+            p.Score = 0;
+            p.ChosenTitle = null;
+            p.Drawing = null;
+            p.OwnDrawingShown = false;
+            p.WrittenTitle = null;
+            p.TitlesToChooseFrom = new List<Title>();
+            p.TitleToDraw = null;
+            p.Ready = false;
+        }
     }
 
     public void Clear()
@@ -152,7 +230,7 @@ public class DrawingGameStateData// : IWebSocketMsg
 }
 
 [Serializable]
-public class PlayerConnectedMsg// : IWebSocketMsg
+public class PlayerConnectedMsg
 {
     [SerializeField]
     public string Name;
@@ -161,16 +239,36 @@ public class PlayerConnectedMsg// : IWebSocketMsg
     [SerializeField]
     public bool Reconnected;
 }
+
 [Serializable]
-public class PlayerDrawingMsg// : IWebSocketMsg
+public class PlayerDrawingMsg
 {
     [SerializeField]
     public string Uid;
     [SerializeField]
     public string DrawingBase64;
 }
+
 [Serializable]
-public class PlayerCustomMsg// : IWebSocketMsg
+public class PlayerTitleMsg
+{
+    [SerializeField]
+    public string Uid;
+    [SerializeField]
+    public string Title;
+}
+
+[Serializable]
+public class PlayerChosenTitleMsg
+{
+    [SerializeField]
+    public string Uid;
+    [SerializeField]
+    public string ChosenTitleUid;
+}
+
+[Serializable]
+public class PlayerCustomMsg
 {
     [SerializeField]
     public string Uid;
@@ -191,6 +289,8 @@ public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateD
     {
         InitStates();
 
+        ServerAPI.AddWebSocketMessageCallback<PlayerConnectedMsg>(WebSocketMessageType.PlayerConnected,OnPlayerConnected);
+
         ChangeState(DrawingGameStates.Lobby);
     }
 
@@ -198,10 +298,10 @@ public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateD
     {
         AddState(DrawingGameStates.Lobby, new LobbyState(lobbyPanel));
         AddState(DrawingGameStates.WaitingForDrawings, new WaitingForDrawingsState(waitingForDrawingsPanel));
-        //AddState(DrawingGameStates.ShowingDrawings, new ShowingDrawingsState(showingDrawingPanel));
-        //AddState(DrawingGameStates.ShowingTitles, new ShowingTitlesState(showingTitlesPanel));
-        //AddState(DrawingGameStates.ShowingRoundScore, new ShowingRoundScoreState(showingRoundScorePanel));
-        //AddState(DrawingGameStates.ShowingTotalScore, new ShowingTotalScoreState(showingTotalScorePanel));
+        AddState(DrawingGameStates.ShowingDrawings, new ShowingDrawingsState(showingDrawingPanel));
+        AddState(DrawingGameStates.ShowingTitles, new ShowingTitlesState(showingTitlesPanel));
+        AddState(DrawingGameStates.ShowingRoundScore, new ShowingRoundScoreState(showingRoundScorePanel));
+        AddState(DrawingGameStates.ShowingTotalScore, new ShowingTotalScoreState(showingTotalScorePanel));
     }
 
     private void OnPlayerConnected(PlayerConnectedMsg newPlayer)
@@ -210,17 +310,13 @@ public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateD
             return;
 
         Player tempPlayer;
-
-        if (!GlobalStatesData.PlayerInRoom(newPlayer.Uid, out tempPlayer))
+        if (GlobalStatesData.PlayerInRoom(newPlayer.Uid, out tempPlayer))
         {
-            tempPlayer = new Player(newPlayer.Uid, newPlayer.Name);
-            tempPlayer.State = DrawingGameStates.Lobby.ToString();
-
-            GlobalStatesData.AddPlayer(tempPlayer);
+            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, GlobalStatesData, GlobalStatesData.Players);
+        }else
+        {
+            // Send msg to this player that room is full
         }
-
-        // type, roomState, playersState
-        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, GlobalStatesData, GlobalStatesData.Players);
     }
 
     [SerializeField]
@@ -250,7 +346,7 @@ public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateD
 
         var generatedTitles = new List<string>();
 
-        while(generatedTitles.Count< titlesToGenerate)
+        while (generatedTitles.Count < titlesToGenerate)
         {
             var rndInd = UnityEngine.Random.Range(0, titlesCopy.Count);
             generatedTitles.Add(titlesCopy[rndInd]);
@@ -258,6 +354,21 @@ public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateD
         }
 
         return titlesCopy;
+    }
+    public static Drawing GetNextDrawingToShow(List<Drawing> fromDrawings)
+    {
+        var leftDrawings = new List<Drawing>();
+
+        foreach (var d in fromDrawings)
+            leftDrawings.Add(d);
+
+        if (leftDrawings.Count > 0)
+        {
+            var randomIndex = UnityEngine.Random.Range(0, leftDrawings.Count);
+            return leftDrawings[randomIndex];
+        }
+
+        return null;
     }
 
     public static Sprite GetDrawingSprite(string drawingBase64, bool save = false)
@@ -291,7 +402,7 @@ public class DrawingGame : StateMachineBase<DrawingGameStates, DrawingGameStateD
         // ----
 
 #if UNITY_EDITOR
-        if(save)
+        if (save)
         {
             // Save the texture as a PNG file
             byte[] bytes = tex.EncodeToPNG();

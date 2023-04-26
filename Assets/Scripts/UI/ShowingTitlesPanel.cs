@@ -16,7 +16,7 @@ public class ShowingTitlesPanel : MonoBehaviour
 
     private List<TitleView> currentTitles;
 
-    public void Init(List<string> titles, Sprite drawing)
+    public void Init(List<Title> titles, Sprite drawing)
     {
         if (currentTitles != null)
         {
@@ -29,8 +29,7 @@ public class ShowingTitlesPanel : MonoBehaviour
 
         drawingImg.sprite = drawing;
 
-        var playersNr = titles.Count;
-        for(int i = 0;i< playersNr;i++)
+        for(int i = 0;i< titles.Count; i++)
         {
             TitleView tempTitle;
 

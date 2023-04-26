@@ -1,114 +1,95 @@
-//using System;
-//using System.Collections;
-//using System.Collections.Generic;
-//using System.Linq;
-//using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
-//public class ShowingTitlesState : BaseState<DrawingGameStates, DrawingGamePrefs>
-//{
-//    private class PlayerDataMessage
-//    {
-//        public string playerName;
-//        public string title;
-//    }
+public class ShowingTitlesState : BaseState<DrawingGameStates, DrawingGameStateData>
+{
+    private ShowingTitlesPanel panel;
 
-//    private ShowingTitlesPanel panel;
+    private float timer;
+    private float startingTimer;
 
-//    private float timer;
-//    private float startingTimer;
+    public ShowingTitlesState(ShowingTitlesPanel panel)
+    {
+        this.panel = panel;
+        timer = 30;
+        startingTimer = 5;
+    }
 
-//    public ShowingTitlesState(ShowingTitlesPanel panel)
-//    {
-//        this.panel = panel;
-//        timer = 30;
-//        startingTimer = 5;
-//    }
+    public override void OnEnterState()
+    {
+        ServerAPI.AddWebSocketMessageCallback<PlayerChosenTitleMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
-//    public override void OnEnterState()
-//    {
-//        ServerAPI.AddWebSocketMessageCallback(WebSocketMessageType.PlayerData, OnPlayerDataReceived);
+        StateData.SetState(DrawingGameStates.ShowingTitles.ToString());
+        StateData.ResetPlayers();
 
-//        var msgParams = new List<WebSocketMessageParam>()
-//        {
-//            new WebSocketMessageParam("state", "ShowingTitles")
-//        };
-//        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
+        StateData.GetPlayer(StateData.CurrentDrawing.Uid).Ready = true;
 
-//        StateData.ResetPlayers();
-//        StateData.currentDrawingPlayer.ready = true;
+        foreach (var p in StateData.Players)
+        {
+            p.TitlesToChooseFrom = new List<Title>();
+            foreach (var t in StateData.CurrentTitles)
+            {
+                bool writtenByThisPlayer = false;
+                foreach (var w in t.WrittedByUid)
+                    if (p.Uid == w)
+                    {
+                        writtenByThisPlayer = true;
+                        break;
+                    }
+                if (!writtenByThisPlayer)
+                    p.TitlesToChooseFrom.Add(t);
+            }
+        }
 
-//        foreach (var p in StateData.Players)
-//        {
-//            msgParams = new List<WebSocketMessageParam>()
-//            {
-//                new WebSocketMessageParam("toPlayer", p.playerName),
-//                new WebSocketMessageParam("ready", "False")
-//            };
-//            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-//        }
+        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
 
+        panel.Show();
+        panel.Init(StateData.CurrentTitles, DrawingGame.GetDrawingSprite(StateData.CurrentDrawing.Base64Texture));
+    }
 
-//        var titlesList = new List<string>();
-//        foreach(var p in StateData.Players)
-//        {
-//            titlesList.Add(p.currentTitleWritten);
-//            /*if (!p.ownDrawingShown)
-//            {
-//                titlesList.Add(p.currentTitleWritten);
-//            }*/
-//        }
+    public override void OnExitState()
+    {
+        ServerAPI.RemoveWebSocketMessageCallback<PlayerChosenTitleMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
-//        titlesList = titlesList.OrderBy(i => Guid.NewGuid()).ToList();
+        panel.Hide();
+    }
 
-//        panel.Init(titlesList, StateData.currentDrawingPlayer.currentDrawing);
-//        panel.Show();
-//    }
+    private void OnPlayerDataReceived(PlayerChosenTitleMsg playerMsg)
+    {
+        Player tempPlayer;
+        if (StateData.PlayerInRoom(playerMsg.Uid, out tempPlayer))
+        {
+            var title = StateData.GetTitle(playerMsg.ChosenTitleUid);
+            if (title != null)
+            {
+                tempPlayer.ChosenTitle = title;
+                tempPlayer.Ready = true;
 
-//    public override void OnExitState()
-//    {
-//        ServerAPI.RemoveWebSocketMessageCallback(WebSocketMessageType.PlayerData, OnPlayerDataReceived);
+                title.ChosenByUid.Add(tempPlayer.Uid);
 
-//        panel.Hide();
-//    }
+                ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
+            }
+        }
+    }
 
-//    private void OnPlayerDataReceived(string playerDataJSON)
-//    {
-//        var msgObj = JsonUtility.FromJson<PlayerDataMessage>(playerDataJSON);
+    public override void StateUpdate()
+    {
+        timer -= Time.deltaTime;
 
-//        DrawingPlayer player;
+        if (StateData.AllPlayersReady())
+        {
+            startingTimer -= Time.deltaTime;
+            panel.SetTimer("Incepem in: " + (int)startingTimer);
 
-//        if (StateData.FindPlayer(msgObj.playerName, out player))
-//        {
-//            if (player.ready)
-//                return;
-
-//            player.currentChosenTitle = msgObj.title;
-//            player.ready = true;
-
-//            var msgParams = new List<WebSocketMessageParam>()
-//            {
-//                new WebSocketMessageParam("toPlayer", player.playerName),
-//                new WebSocketMessageParam("ready", "True")
-//            };
-//            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-//        }
-//    }
-
-//    public override void StateUpdate()
-//    {
-//        timer -= Time.deltaTime;
-
-//        if(StateData.AllPlayersReady())
-//        {
-//            startingTimer -= Time.deltaTime;
-//            panel.SetTimer("Starting in: " + (int)startingTimer);
-
-//            if (startingTimer <= 0)
-//                ChangeState(DrawingGameStates.ShowingRoundScore);
-//        }
-//        else
-//        {
-//            panel.SetTimer("Time left: " + (int)timer);
-//        }
-//    }
-//}
+            if (startingTimer <= 0)
+                ChangeState(DrawingGameStates.ShowingRoundScore);
+        }
+        else
+        {
+            panel.SetTimer("Timp ramas: " + (int)timer);
+        }
+    }
+}

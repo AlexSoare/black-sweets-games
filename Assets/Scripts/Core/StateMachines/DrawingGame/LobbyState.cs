@@ -14,7 +14,7 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
     public override void OnEnterState()
     {
         StateData.Clear();
-        StateData.State = DrawingGameStates.Lobby.ToString();
+        StateData.SetState(DrawingGameStates.Lobby.ToString());
 
         ServerAPI.AddWebSocketMessageCallback<PlayerConnectedMsg>(WebSocketMessageType.PlayerConnected, OnPlayerConnected);
         ServerAPI.AddWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerAvatarDrawing);
@@ -80,6 +80,7 @@ public class LobbyState : BaseState<DrawingGameStates, DrawingGameStateData>
 
     private void OnStartGame()
     {
+        ServerAPI.SendToWebSocket(WebSocketMessageType.GameStarted, StateData, StateData.Players);
         ChangeState(DrawingGameStates.WaitingForDrawings);
     }
 

@@ -1,81 +1,94 @@
-//using System.Collections;
-//using System.Collections.Generic;
-//using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-//public class ShowingRoundScoreState : BaseState<DrawingGameStates, DrawingGamePrefs>
-//{
-//    private ShowingRoundScorePanel panel;
+public class ShowingRoundScoreState : BaseState<DrawingGameStates, DrawingGameStateData>
+{
+    private ShowingRoundScorePanel panel;
 
-//    public ShowingRoundScoreState(ShowingRoundScorePanel panel)
-//    {
-//        this.panel = panel;
-//    }
+    public ShowingRoundScoreState(ShowingRoundScorePanel panel)
+    {
+        this.panel = panel;
+    }
 
-//    bool done;
+    bool done;
 
-//    public override void OnEnterState()
-//    {
-//        done = false;
+    public override void OnEnterState()
+    {
+        StateData.SetState(DrawingGameStates.ShowingRoundScore.ToString());
+        StateData.ResetPlayers();
 
-//        StateData.currentRoundWinners = new List<string>();
+        foreach (var p in StateData.Players)
+        {
+            p.TitlesToChooseFrom = new List<Title>();
+            foreach (var t in StateData.CurrentTitles)
+            {
+                bool writtenByThisPlayer = false;
+                foreach (var w in t.WrittedByUid)
+                    if (p.Uid == w)
+                    {
+                        writtenByThisPlayer = true;
+                        break;
+                    }
+                if (!writtenByThisPlayer)
+                    p.TitlesToChooseFrom.Add(t);
+            }
+        }
 
-//        foreach (var title in StateData.currentDrawingTitles)
-//        {
-//            title.chosenBy = new List<string>();
+        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
 
-//            foreach (var p in StateData.Players)
-//            {
-//                if (p.currentChosenTitle == title.title)
-//                {
-//                    title.chosenBy.Add(p.playerName);
-//                }
-//            }
-//        }
+        panel.Show();
+        panel.SetDrawing(DrawingGame.GetDrawingSprite(StateData.CurrentDrawing.Base64Texture));
 
-//        foreach (var p in StateData.Players)
-//        {
-//            if (p.currentChosenTitle == StateData.currentDrawingPlayer.currentTitleToDraw)
-//            {
-//                StateData.currentRoundWinners.Add(p.playerName);
-//                p.score += 1000;
-//            }
-//        }
+        CoroutineHelper.Start(ShowTitlesRoutine());
+    }
 
-//        StateData.currentDrawingPlayer.score += 1000 * StateData.currentRoundWinners.Count;
+    private IEnumerator ShowTitlesRoutine()
+    {
+        StateData.CurrentTitles.Sort((t1, t2) => t2.ChosenByUid.Count.CompareTo(t1.ChosenByUid.Count));
 
-//        StateData.currentDrawingTitles.Sort((t1, t2) => { return t2.chosenBy.Count.CompareTo(t1.chosenBy.Count); });
+        var chosedBy = new List<Player>();
+        var writtenBy = new List<Player>();
 
-//        panel.SetDrawing(StateData.currentDrawingPlayer.currentDrawing);
-//        panel.Show();
+        foreach (var title in StateData.CurrentTitles)
+        {
+            if (title.Original || title.ChosenByUid.Count == 0)
+                continue;
 
-//        CoroutineHelper.Start(ShowTitlesRoutine());
-//    }
+            chosedBy = StateData.GetPlayers(title.ChosenByUid);
+            writtenBy = StateData.GetPlayers(title.WrittedByUid);
 
-//    private IEnumerator ShowTitlesRoutine()
-//    {
-//        foreach(var title in StateData.currentDrawingTitles)
-//        {
-//            if (title.chosenBy.Count == 0)
-//                continue;
+            foreach (var p in writtenBy)
+                p.Score += (chosedBy.Count * 1000);
 
+            yield return CoroutineHelper.Start(panel.SetTitle(title, chosedBy, writtenBy, false));
+        }
 
-//            yield return CoroutineHelper.Start(panel.SetTitle(title.title,title.chosenBy,title.playerNames, false));
-//        }
+        var originalTitle = StateData.CurrentTitles.Find(t => t.Original);
 
-//        yield return CoroutineHelper.Start(panel.SetTitle(StateData.currentDrawingPlayer.currentTitleToDraw, StateData.currentRoundWinners, new List<string> { StateData.currentDrawingPlayer.playerName }, true));
+        chosedBy = StateData.GetPlayers(originalTitle.ChosenByUid);
+        var originalPlayer = StateData.GetPlayer(originalTitle.WrittedByUid[0]);
 
-//        yield return new WaitForSeconds(2);
-//        done = true;
-//    }
+        foreach (var p in chosedBy)
+            p.Score += 1000;
 
-//    public override void OnExitState()
-//    {
-//        panel.Hide();
-//    }
+        originalPlayer.Score += (chosedBy.Count * 1000);
 
-//    public override void StateUpdate()
-//    {
-//        if (done)
-//            ChangeState(DrawingGameStates.ShowingTotalScore);
-//    }
-//}
+        yield return CoroutineHelper.Start(panel.SetTitle(originalTitle, chosedBy,new List<Player> { originalPlayer }, true));
+
+        yield return new WaitForSeconds(2);
+
+        done = true;
+    }
+
+    public override void OnExitState()
+    {
+        panel.Hide();
+    }
+
+    public override void StateUpdate()
+    {
+        if (done)
+            ChangeState(DrawingGameStates.ShowingTotalScore);
+    }
+}

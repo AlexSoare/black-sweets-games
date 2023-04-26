@@ -1,75 +1,59 @@
-//using System.Collections;
-//using System.Collections.Generic;
-//using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
-//public class ShowingTotalScoreState : BaseState<DrawingGameStates, DrawingGamePrefs>
-//{
-//    private ShowingTotalScorePanel panel;
+public class ShowingTotalScoreState : BaseState<DrawingGameStates, DrawingGameStateData>
+{
+    private ShowingTotalScorePanel panel;
 
-//    public ShowingTotalScoreState(ShowingTotalScorePanel panel)
-//    {
-//        this.panel = panel;
-//    }
+    public ShowingTotalScoreState(ShowingTotalScorePanel panel)
+    {
+        this.panel = panel;
+    }
 
-//    bool done; 
+    bool done;
 
-//    public override void OnEnterState()
-//    {
-//        var scoring = new List<string>();
+    public override void OnEnterState()
+    {
+        StateData.SetState(DrawingGameStates.ShowingTotalScore.ToString());
 
-//        StateData.Players.Sort((p1, p2) => { return p2.score.CompareTo(p1.score); });
+        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
 
-//        foreach(var p in StateData.Players)
-//        {
-//            scoring.Add(p.playerName + ": " + p.score);
-//        }
+        StateData.Players.Sort((p1, p2) => { return p2.Score.CompareTo(p1.Score); });
 
-//        panel.Init(scoring, OnRestart);
-//        panel.Show();
+        panel.Init(StateData.Players, OnRestart);
+        panel.Show();
 
-//        CoroutineHelper.Start(Next());
-//    }
+        CoroutineHelper.Start(Next());
+    }
 
-//    IEnumerator Next()
-//    {
-//        yield return new WaitForSeconds(5);
-//        if (!StateData.lastDrawing)
-//            ChangeState(DrawingGameStates.ShowingDrawings);
-//        else
-//            panel.ShowEndText();
-//    }
-//    public override void OnExitState()
-//    {
-//        panel.Hide();
-//    }
+    IEnumerator Next()
+    {
+        yield return new WaitForSeconds(5);
+        StateData.Drawings.Remove(StateData.CurrentDrawing);
 
-//    public override void StateUpdate()
-//    {
-        
-//    }
+        if (StateData.Drawings.Count > 0)
+            ChangeState(DrawingGameStates.ShowingDrawings);
+        else
+            panel.ShowEndText();
+    }
+    public override void OnExitState()
+    {
+        panel.Hide();
+    }
 
-//    private void OnRestart()
-//    {
-//        StateData.ResetPlayers();
-//        StateData.ResetPlayersScore();
+    public override void StateUpdate()
+    {
 
-//        var msgParams = new List<WebSocketMessageParam>()
-//        {
-//            new WebSocketMessageParam("state", "GameReset")
-//        };
+    }
 
-//        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
+    private void OnRestart()
+    {
+        StateData.ResetEverything();
+        StateData.SetState(DrawingGameStates.WaitingForDrawings.ToString());
 
-//        foreach (var p in StateData.Players)
-//        {
-//            msgParams = new List<WebSocketMessageParam>()
-//            {
-//                new WebSocketMessageParam("toPlayer", p.playerName),
-//                new WebSocketMessageParam("ready", "False")
-//            };
-//            ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, msgParams);
-//        }
+        ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
 
-//        ChangeState(DrawingGameStates.WaitingForDrawings);
-//    }
-//}
+        ChangeState(DrawingGameStates.WaitingForDrawings);
+    }
+}

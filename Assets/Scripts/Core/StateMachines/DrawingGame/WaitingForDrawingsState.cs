@@ -9,12 +9,6 @@ using MemoryStream = System.IO.MemoryStream;
 
 public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameStateData>
 {
-    private class PlayerDrawing
-    {
-        public string playerName;
-        public string titleToDraw;
-    }
-
 
     private WaitingForDrawingsPanel panel;
 
@@ -30,6 +24,7 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameS
     public override void OnEnterState()
     {
         StateData.ResetPlayers();
+        StateData.SetState(DrawingGameStates.WaitingForDrawings.ToString());
 
         ServerAPI.AddWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
@@ -38,8 +33,7 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameS
 
         for (int i = 0; i < StateData.Players.Count; i++)
         {
-            StateData.Players[i].State = DrawingGameStates.WaitingForDrawings.ToString();
-            StateData.Players[i].TitleToDraw = new Title(drawings[i], StateData.Players[i].Uid);
+            StateData.Players[i].TitleToDraw = new Title(drawings[i], StateData.Players[i].Uid, true);
         }
 
         ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
@@ -68,12 +62,15 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameS
             {
                 Uid = tempPlayer.Uid,
                 Base64Texture = playerDrawing.DrawingBase64,
+                Title = tempPlayer.TitleToDraw,
             };
 
             tempPlayer.Ready = true;
 
             var drawingSprite = DrawingGame.GetDrawingSprite(playerDrawing.DrawingBase64);
-            panel.SetPlayerDrawing(tempPlayer, drawingSprite);
+
+            panel.SetPlayerDone(tempPlayer);
+            panel.SetPlayerDrawing(tempPlayer, DrawingGame.GetDrawingSprite(tempPlayer.Avatar.Base64Texture));
 
             ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);
         }
@@ -83,18 +80,20 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameS
     {
         timer -= Time.deltaTime;
 
-        //if (StateData.AllPlayersReady())
-        //{
-        //    startingTimer -= Time.deltaTime;
+        if (StateData.AllPlayersReady())
+        {
+            startingTimer -= Time.deltaTime;
+            panel.SetTimer("Incepem in:" + (int)startingTimer);
 
-        //    panel.SetTimer("Starting in :" + (int)startingTimer);
+            if (startingTimer <= 0)
+            {
+                ChangeState(DrawingGameStates.ShowingDrawings);
+            }
 
-        //    if (startingTimer <= 0)
-        //        ChangeState(DrawingGameStates.ShowingDrawings);
-        //}
-        //else
-        //{
-        //    panel.SetTimer("Time left :" + (int)timer);
-        //}
+        }
+        else
+        {
+            panel.SetTimer("Timp ramas:" + (int)timer);
+        }
     }
 }

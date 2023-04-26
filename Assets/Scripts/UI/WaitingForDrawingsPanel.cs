@@ -50,6 +50,13 @@ public class WaitingForDrawingsPanel : MonoBehaviour
             if (p.player.Uid == player.Uid)
                 p.SetDrawing(drawing);
     }
+    public void SetPlayerDone(Player player)
+    {
+        foreach (var p in playersView)
+            if (p.player.Uid == player.Uid)
+                p.SetDone();
+    }
+
 
     public void SetTimer(string time)
     {
