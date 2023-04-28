@@ -124,6 +124,8 @@ public class DrawingGameStateData
     public List<Title> CurrentTitles;
     [SerializeField]
     public List<string> CurrentRoundWinners;
+    [SerializeField]
+    public bool DrawingsInited;
 
     public void SetState(string state)
     {
@@ -199,14 +201,16 @@ public class DrawingGameStateData
         return CurrentTitles.Find(t => t.Uid == uid);
     }
 
-    public void ResetPlayers()
+    public void ResetPlayersState()
     {
         foreach (var p in Players)
             p.Ready = false;
     }
 
-    public void ResetEverything()
+    public void ResetRound()
     {
+        DrawingsInited = false;
+
         foreach (var p in Players)
         {
             p.Score = 0;

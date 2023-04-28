@@ -49,7 +49,7 @@ public class ShowingTotalScoreState : BaseState<DrawingGameStates, DrawingGameSt
 
     private void OnRestart()
     {
-        StateData.ResetEverything();
+        StateData.ResetRound();
         StateData.SetState(DrawingGameStates.WaitingForDrawings.ToString());
 
         ServerAPI.SendToWebSocket(WebSocketMessageType.RoomStateUpdate, StateData, StateData.Players);

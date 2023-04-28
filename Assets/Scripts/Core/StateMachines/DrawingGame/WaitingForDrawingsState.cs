@@ -23,7 +23,7 @@ public class WaitingForDrawingsState : BaseState<DrawingGameStates, DrawingGameS
 
     public override void OnEnterState()
     {
-        StateData.ResetPlayers();
+        StateData.ResetPlayersState();
         StateData.SetState(DrawingGameStates.WaitingForDrawings.ToString());
 
         ServerAPI.AddWebSocketMessageCallback<PlayerDrawingMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);

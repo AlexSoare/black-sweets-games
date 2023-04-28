@@ -23,7 +23,7 @@ public class ShowingTitlesState : BaseState<DrawingGameStates, DrawingGameStateD
         ServerAPI.AddWebSocketMessageCallback<PlayerChosenTitleMsg>(WebSocketMessageType.PlayerInputUpdate, OnPlayerDataReceived);
 
         StateData.SetState(DrawingGameStates.ShowingTitles.ToString());
-        StateData.ResetPlayers();
+        StateData.ResetPlayersState();
 
         StateData.GetPlayer(StateData.CurrentDrawing.Uid).Ready = true;
 

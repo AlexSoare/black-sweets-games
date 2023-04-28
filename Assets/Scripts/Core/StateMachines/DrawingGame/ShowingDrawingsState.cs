@@ -23,17 +23,20 @@ public class ShowingDrawingsState : BaseState<DrawingGameStates, DrawingGameStat
 
         StateData.SetState(DrawingGameStates.ShowingDrawings.ToString());
 
-        if(StateData.Drawings == null)
+        if (!StateData.DrawingsInited)
             StateData.Drawings = new List<Drawing>();
 
         StateData.CurrentTitles = new List<Title>();
-        StateData.ResetPlayers();
+        StateData.ResetPlayersState();
 
         foreach (var p in StateData.Players)
         {
             p.OwnDrawingShown = false;
-            StateData.Drawings.Add(p.Drawing);
+            if (!StateData.DrawingsInited)
+                StateData.Drawings.Add(p.Drawing);
         }
+
+        StateData.DrawingsInited = true;
 
         var currentDrawing = DrawingGame.GetNextDrawingToShow(StateData.Drawings);
 
@@ -58,6 +61,8 @@ public class ShowingDrawingsState : BaseState<DrawingGameStates, DrawingGameStat
         Player tempPlayer;
         if (StateData.PlayerInRoom(playerTitle.Uid, out tempPlayer))
         {
+            playerTitle.Title = playerTitle.Title.ToUpper();
+
             Title title;
 
             if(StateData.TitleAlreadyWritten(playerTitle.Title, out title))

@@ -15,8 +15,10 @@ public class ShowingRoundScoreState : BaseState<DrawingGameStates, DrawingGameSt
 
     public override void OnEnterState()
     {
+        done = false;
+
         StateData.SetState(DrawingGameStates.ShowingRoundScore.ToString());
-        StateData.ResetPlayers();
+        StateData.ResetPlayersState();
 
         foreach (var p in StateData.Players)
         {
