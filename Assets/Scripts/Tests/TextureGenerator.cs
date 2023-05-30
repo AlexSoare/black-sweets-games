@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 
@@ -57,3 +58,4 @@ public class TextureGenerator : MonoBehaviour
         image.sprite = sprite;
     }
 }
+#endif
